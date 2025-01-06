@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>게시글 상세 - 코인 추천 커뮤니티</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <header>
+        <div class="container">
+            <h1>게시글 상세</h1>
+            <nav>
+                <ul>
+                    <li><a href="index.html">홈</a></li>
+                    <li><a href="board.html">게시판</a></li>
+                    <li><a href="realtime.html">실시간 추천</a></li> <!-- 실시간 추천 메뉴 추가 -->
+                    <li><a href="profile.html">프로필</a></li>
+                    <li id="login-item"><a href="login.html">로그인</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+    
+    <main>
+        <section class="container">
+            <article id="post-detail">
+                <!-- 게시글 내용 동적으로 삽입 -->
+            </article>
+
+            <!-- 삭제 버튼 (기본 숨김) -->
+            <button id="delete-post-btn" style="display: none;">게시글 삭제</button>
+
+            <!-- 댓글 작성 폼 -->
+            <form id="comment-form" style="margin-top: 20px;">
+                <textarea name="content" rows="4" placeholder="댓글을 입력하세요" required></textarea><br>
+                <button type="submit">댓글 작성</button>
+            </form>
+
+            <!-- 댓글 목록 -->
+            <section id="comment-list" style="margin-top: 30px;">
+                <h3>댓글 목록</h3>
+                <div id="comments-container">
+                    <!-- 댓글 동적 삽입 -->
+                </div>
+            </section>
+        </section>
+    </main>
+    
+    <footer>
+        <div class="container">
+            <p>&copy; 2025 코인 추천 커뮤니티</p>
+        </div>
+    </footer>
+    
+    <script>
+        const urlParams = new URLSearchParams(window.location.search);
+        const postId = urlParams.get('id');
+
+        // 게시글 상세 불러오기
+        function loadPost() {
+            fetch(`/posts/${postId}`)
+                .then(response => response.json())
+                .then(post => {
+                    const postDetail = document.getElementById('post-detail');
+                    postDetail.innerHTML = `
+                        <h2>${post.title}</h2>
+                        <p>${post.content}</p>
+                        <p>작성자: ${post.author}</p>
+                        <p>${new Date(post.created_at).toLocaleString()}</p>
+                    `;
+
+                    // 로그인된 사용자와 게시글 작성자가 일치하면 삭제 버튼 표시
+                    fetch('/get-user')
+                        .then(response => response.json())
+                        .then(user => {
+                            if (user.id === post.user_id || user.role === 'admin') {
+                                document.getElementById('delete-post-btn').style.display = 'block';
+                            }
+                        });
+                })
+                .catch(err => {
+                    console.error('게시글 불러오기 실패:', err);
+                    alert('게시글을 불러오는 데 실패했습니다.');
+                    window.location.href = '/board.html';
+                });
+        }
+
+        // 댓글 불러오기
+        function loadComments() {
+            fetch(`/comments/${postId}`)
+                .then(response => response.json())
+                .then(comments => {
+                    const commentsContainer = document.getElementById('comments-container');
+                    commentsContainer.innerHTML = '';
+
+                    comments.forEach(comment => {
+                        const commentElement = document.createElement('div');
+                        commentElement.classList.add('comment');
+                        commentElement.innerHTML = `
+                            <p>${comment.content}</p>
+                            <p>작성자: ${comment.author} | ${new Date(comment.created_at).toLocaleString()}</p>
+                        `;
+                        commentsContainer.appendChild(commentElement);
+                    });
+                })
+                .catch(err => {
+                    console.error('댓글 불러오기 실패:', err);
+                });
+        }
+
+        // 댓글 작성
+        document.getElementById('comment-form').addEventListener('submit', function(event) {
+            event.preventDefault();
+            const content = this.querySelector('textarea[name="content"]').value;
+
+            fetch(`/create-comment/${postId}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ content })
+            })
+            .then(response => {
+                if (response.ok) {
+                    alert('댓글이 등록되었습니다.');
+                    loadComments();
+                    this.reset();
+                } else {
+                    alert('댓글 등록에 실패했습니다.');
+                }
+            })
+            .catch(err => {
+                console.error('댓글 작성 오류:', err);
+            });
+        });
+
+        // 게시글 삭제
+        document.getElementById('delete-post-btn').addEventListener('click', function() {
+            if (confirm('게시글을 삭제하시겠습니까?')) {
+                fetch(`/delete-post/${postId}`, {
+                    method: 'POST'
+                })
+                .then(response => {
+                    if (response.ok) {
+                        alert('게시글이 삭제되었습니다.');
+                        window.location.href = '/board.html';
+                    } else {
+                        alert('게시글 삭제에 실패했습니다.');
+                    }
+                })
+                .catch(err => {
+                    console.error('게시글 삭제 오류:', err);
+                });
+            }
+        });
+
+        // 로그인 상태 확인
+        fetch('/get-user')
+            .then(response => response.json())
+            .then(data => {
+                const loginItem = document.getElementById('login-item');
+
+                if (data.nickname) {
+                    loginItem.innerHTML = `<span>${data.nickname}님 | </span><a href="/logout">로그아웃</a>`;
+                }
+            })
+            .catch(err => {
+                console.error('로그인 상태 확인 실패:', err);
+            });
+
+        document.addEventListener('DOMContentLoaded', () => {
+            loadPost();
+            loadComments();
+        });
+    </script>
+
+</body>
+</html>
