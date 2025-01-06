@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <!-- 타이틀 설정 -->
+  <title>RSI 기반 코인 추천 (상위 100위 코인 분석)</title>
+  
+  <!-- 설명(Description) -->
+  <meta name="description" content="RSI 기반으로 실시간으로 추천되는 상위 100위 코인 분석. 매수/매도 추천을 통해 암호화폐 트레이딩에 유용한 정보를 제공합니다.">
+  
+  <!-- 키워드(Keywords) -->
+  <meta name="keywords" content="RSI, 코인 추천, 암호화폐, 상위 100위 코인, 매수 추천, 매도 추천, Binance">
+  
+  <!-- 작성자(Author) -->
+  <meta name="author" content="Your Name">
+  
+  <!-- Open Graph 태그 (소셜 미디어에서 미리보기 이미지 및 설명 표시) -->
+  <meta property="og:title" content="RSI 기반 코인 추천 (상위 100위 코인 분석)">
+  <meta property="og:description" content="RSI 기반으로 실시간으로 추천되는 상위 100위 코인 분석. 매수/매도 추천을 통해 암호화폐 트레이딩에 유용한 정보를 제공합니다.">
+  <meta property="og:image" content="assets/images/logo.png"> <!-- 이미지 경로 수정 -->
+  <meta property="og:url" content="https://example.com"> <!-- 사이트 URL 수정 -->
+  <meta property="og:type" content="website">
+  
+  <!-- 트위터 카드 설정 -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="RSI 기반 코인 추천 (상위 100위 코인 분석)">
+  <meta name="twitter:description" content="RSI 기반으로 실시간으로 추천되는 상위 100위 코인 분석. 매수/매도 추천을 통해 암호화폐 트레이딩에 유용한 정보를 제공합니다.">
+  <meta name="twitter:image" content="assets/images/logo.png"> <!-- 이미지 경로 수정 -->
+  
+  <!-- 콘텐츠 언어 설정 -->
+  <meta name="language" content="ko">
+
+  <!-- 로봇에 대한 지침 설정 (SEO 최적화) -->
+  <meta name="robots" content="index, follow">
+  
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      background-color: #121212;
+      color: #e0e0e0;
+    }
+    header {
+      background-color: #1f1f1f;
+      color: #fff;
+      text-align: center;
+      padding: 1rem 0;
+      font-size: 1.5rem;
+      font-weight: bold;
+    }
+    .container {
+      max-width: 1200px;
+      margin: 2rem auto;
+      padding: 1rem;
+      background-color: #1c1c1c;
+      border-radius: 8px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.5);
+    }
+    .section-title {
+      font-size: 1.5rem;
+      margin-bottom: 1rem;
+      text-align: center;
+      color: #fff;
+    }
+    .coin-list {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+      gap: 1rem;
+      list-style-type: none;
+      padding: 0;
+    }
+    .coin-item {
+      background-color: #2a2a2a;
+      padding: 1rem;
+      border-radius: 8px;
+      border: 1px solid #444;
+      transition: transform 0.3s ease;
+      text-align: center;
+    }
+    .coin-item:hover {
+      transform: translateY(-5px);
+    }
+    .oversold {
+      border: 2px solid #FF4500;
+      color: #FF4500;
+    }
+    .overbought {
+      border: 2px solid #008000;
+      color: #008000;
+    }
+    .buy {
+      color: #4CAF50;
+      font-weight: bold;
+    }
+    .sell {
+      color: #FF5733;
+      font-weight: bold;
+    }
+    .clear-button {
+      background-color: #FF4500;
+      color: white;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      display: block;
+      margin: 1.5rem auto;
+    }
+    .timeframe-selector {
+      display: flex;
+      justify-content: center;
+      margin: 1rem 0;
+    }
+    select {
+      padding: 10px;
+      border-radius: 5px;
+      font-size: 1rem;
+      margin-left: 10px;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    RSI 기반 코인 추천 (상위 100위 코인 분석)
+  </header>
+  <div class="container">
+    <div class="timeframe-selector">
+      <label for="timeframe">타임 프레임 선택:</label>
+      <select id="timeframe">
+        <option value="1m">1분봉</option>
+        <option value="5m">5분봉</option>
+        <option value="15m">15분봉</option>
+        <option value="1h">1시간봉</option>
+      </select>
+    </div>
+    <h2 class="section-title">추천 코인 목록</h2>
+    <div id="loading-message" class="loading">실시간 갱신 중...</div>
+    <ul id="coin-list" class="coin-list"></ul>
+
+    <div class="separator"></div>
+
+    <h2 class="section-title">이전 추천 목록</h2>
+    <ul id="previous-coin-list" class="coin-list"></ul>
+    <button id="clear-button" class="clear-button">추천 기록 삭제</button>
+  </div>
+
+  <script>
+    let selectedTimeFrame = '1m';  // 기본 타임 프레임 설정
+
+    // Binance API에서 선물 시장 24시간 거래 데이터 가져오기
+    async function fetchFuturesMarketData() {
+      const url = 'https://fapi.binance.com/fapi/v1/ticker/24hr';
+      try {
+        const response = await fetch(url);
+        const data = await response.json();
+        
+        return data
+          .filter(coin => coin.symbol.endsWith('USDT'))
+          .sort((a, b) => parseFloat(b.quoteVolume) - parseFloat(a.quoteVolume))
+          .slice(0, 100);  // 상위 100개
+      } catch (error) {
+        console.error("API 호출 실패:", error);
+        return [];
+      }
+    }
+
+    // 선택된 타임 프레임으로 데이터 가져오기
+    async function fetchTimeFrameData(symbol, interval) {
+      const url = `https://api.binance.com/api/v3/klines`;
+      const params = new URLSearchParams({
+        symbol: symbol,
+        interval: interval,
+        limit: "14"
+      });
+
+      try {
+        const response = await fetch(`${url}?${params}`);
+        const data = await response.json();
+        return data.map(kline => parseFloat(kline[4])); // 종가 반환
+      } catch (error) {
+        console.error(`${interval} 데이터 호출 실패:`, error);
+        return [];
+      }
+    }
+
+    // RSI 계산
+    function calculateRSI(prices) {
+      let gains = 0;
+      let losses = 0;
+
+      for (let i = 1; i < prices.length; i++) {
+        const diff = prices[i] - prices[i - 1];
+        if (diff > 0) {
+          gains += diff;
+        } else {
+          losses += Math.abs(diff);
+        }
+      }
+
+      const avgGain = gains / 14;
+      const avgLoss = losses / 14;
+
+      if (avgLoss === 0) return 100;  // 모든 상승장
+      const rs = avgGain / avgLoss;
+      return 100 - (100 / (1 + rs));
+    }
+
+    // 추천 코인 표시 및 기록 저장
+    async function displayRecommendedCoins() {
+      const coinList = document.getElementById("coin-list");
+      const loadingMessage = document.getElementById("loading-message");
+
+      loadingMessage.style.display = "block";
+      coinList.innerHTML = "";
+
+      const marketData = await fetchFuturesMarketData();
+
+      const coinRSIs = [];
+
+      for (const coin of marketData) {
+        const prices = await fetchTimeFrameData(coin.symbol, selectedTimeFrame);
+        if (prices.length > 0) {
+          const rsi = calculateRSI(prices);
+          const recommendation = rsi <= 20 ? "매수 추천" : rsi >= 80 ? "매도 추천" : "관망";
+          const time = new Date().toLocaleString();
+          if (rsi <= 20 || rsi >= 80) {
+            coinRSIs.push({ symbol: coin.symbol, rsi, recommendation, time });
+          }
+        }
+      }
+
+      coinRSIs.slice(0, 10).forEach(coin => {
+        const listItem = document.createElement("li");
+        listItem.classList.add("coin-item", coin.rsi <= 20 ? "oversold" : "overbought");
+        listItem.innerHTML = `
+          <div>${coin.symbol}</div>
+          <div>${selectedTimeFrame} RSI: ${coin.rsi.toFixed(2)}</div>
+          <div>${coin.recommendation}</div>
+          <div><small>${coin.time}</small></div>
+        `;
+        coinList.appendChild(listItem);
+      });
+
+      savePreviousRecommendations(coinRSIs);
+      displayPreviousRecommendations();
+
+      loadingMessage.style.display = "none";
+    }
+
+    // 이전 추천 목록 저장 (localStorage)
+    function savePreviousRecommendations(coinRSIs) {
+      let previousList = JSON.parse(localStorage.getItem("previousRecommendations")) || [];
+      previousList = coinRSIs.concat(previousList);  // 최신 추천을 맨 위에 추가
+      previousList = previousList.slice(0, 30);  // 최대 30개 저장
+      localStorage.setItem("previousRecommendations", JSON.stringify(previousList));
+    }
+
+    // 이전 추천 목록 불러오기 및 표시
+    function displayPreviousRecommendations() {
+      const previousCoinList = document.getElementById("previous-coin-list");
+      previousCoinList.innerHTML = "";
+
+      const previousList = JSON.parse(localStorage.getItem("previousRecommendations")) || [];
+
+      previousList.forEach(coin => {
+        const listItem = document.createElement("li");
+        listItem.classList.add("coin-item", coin.rsi <= 20 ? "oversold" : "overbought");
+        listItem.innerHTML = `
+          <div>${coin.symbol}</div>
+          <div>RSI: ${coin.rsi.toFixed(2)}</div>
+          <div>${coin.recommendation}</div>
+          <div><small>${coin.time}</small></div>
+        `;
+        previousCoinList.appendChild(listItem);
+      });
+    }
+
+    // 타임 프레임 선택 이벤트 리스너 추가
+    document.getElementById("timeframe").addEventListener("change", (event) => {
+      selectedTimeFrame = event.target.value;
+      displayRecommendedCoins();  // 타임 프레임 변경 시 즉시 데이터 갱신
+    });
+
+    // 추천 기록 삭제
+    document.getElementById("clear-button").addEventListener("click", () => {
+      localStorage.removeItem("previousRecommendations");
+      displayPreviousRecommendations();
+    });
+
+    // 초기 데이터 표시 및 1분마다 자동 갱신
+    displayRecommendedCoins();
+    setInterval(displayRecommendedCoins, 60000);
+</script>
+</body>
+</html>
