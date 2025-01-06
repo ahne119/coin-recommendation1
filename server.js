@@ -1,6 +1,6 @@
 const express = require('express');
 const bodyParser = require('body-parser');
-const bcrypt = require('bcrypt');
+const bcryptjs = require('bcryptjs');
 const session = require('express-session');
 const db = require('./db');  // db.js에서 데이터베이스 연결을 불러옴
 
@@ -30,7 +30,7 @@ app.post('/signup', async (req, res) => {
         return res.send('모든 필드를 입력해 주세요.');
     }
 
-    const hashedPassword = await bcrypt.hash(password, 10);
+    const hashedPassword = await bcryptjs.hash(password, 10);
     const sql = 'INSERT INTO users (nickname, email, password) VALUES (?, ?, ?)';
 
     db.query(sql, [nickname, email, hashedPassword], (err, result) => {
@@ -54,7 +54,7 @@ app.post('/login', (req, res) => {
         }
 
         const user = results[0];
-        const match = await bcrypt.compare(password, user.password);
+        const match = await bcryptjs.compare(password, user.password);
 
         if (match) {
             req.session.user = {
