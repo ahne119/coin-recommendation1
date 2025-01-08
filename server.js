@@ -800,18 +800,3 @@ app.get('/admin/daily-visits', (req, res) => {
         res.json(results);  // 일일 방문자 수 반환
     });
 });
-
-const express = require('express');
-const bodyParser = require('body-parser');
-const signupRoute = require('./src/routes/signup'); // signup.js 라우터
-
-
-app.use(bodyParser.urlencoded({ extended: true }));
-app.use(bodyParser.json());
-
-// 회원가입 라우트 등록
-app.use('/api', signupRoute);
-
-app.listen(3000, () => {
-  console.log('Server is running on http://localhost:3000');
-});
